@@ -1,6 +1,6 @@
 # Advent of *multilanguage* Code
 
-This project chronicles my efforts in completing "Advent of Code" by Eric Wastl.
+This project chronicles my efforts in completing ["Advent of Code" by Eric Wastl](http://adventofcode.com/2016).
 During which, I shall attempt to use a variety of languages and paradigms.
 
 | Day | Part | Description           | Language |
