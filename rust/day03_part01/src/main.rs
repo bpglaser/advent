@@ -13,8 +13,7 @@ fn read_lines() -> Vec<String> {
         if buf.trim().is_empty() {
             break;
         } else {
-            lines.push(buf.clone());
-            buf.clear();
+            lines.push(buf);
         }
     }
     lines
