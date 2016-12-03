@@ -10,6 +10,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 02  | 01   | Bathroom Security        | Java     |
 | 02  | 02   | Bathroom Security        | Java     |
 | 03  | 01   | Squares With Three Sides | Rust     |
+| 03  | 02   | Squares With Three Sides | Rust     |
 
 ## Advent of Code
 

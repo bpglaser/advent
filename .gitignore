@@ -1,3 +1,4 @@
 .idea/
 out/
 rust/day03_part01/target
+rust/day03_part02/target
