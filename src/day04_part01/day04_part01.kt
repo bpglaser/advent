@@ -28,7 +28,4 @@ fun isValid(s: String): Boolean {
     return calculatedChecksum == givenChecksum
 }
 
-fun extractSectorID(s: String): Int {
-    val toInt = s.substringAfterLast("-").substringBeforeLast("[").toInt()
-    return toInt
-}
+fun extractSectorID(s: String) = s.substringAfterLast("-").substringBeforeLast("[").toInt()
