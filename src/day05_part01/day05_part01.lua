@@ -6,7 +6,7 @@ assert(input, "no puzzle input passed")
 local i = 0
 local password = ""
 
-while string.len(password) <= 8 do
+while string.len(password) < 8 do
     local tohash = input .. i
     local sum = md5.sumhexa(tohash)
 
