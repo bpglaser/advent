@@ -10,6 +10,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 03  | Squares With Three Sides        | Rust     | ✔️      |
 | 04  | Security Through Obscurity      | Kotlin   | ✔️      |
 | 05  | How About a Nice Game of Chess? | Lua      | ✘      |
+| 06  | Signals and Noise               | Ruby     | ✘      |
 
 ## Advent of Code
 
