@@ -3,12 +3,13 @@
 This project chronicles my efforts in completing ["Advent of Code" by Eric Wastl](http://adventofcode.com/2016).
 During which, I shall attempt to use a variety of languages and paradigms.
 
-| Day | Description                | Language | Known* |
-| --- | -------------------------- | -------- | ------ |
-| 01  | No Time for a Taxicab      | Python   | ✔️      |
-| 02  | Bathroom Security          | Java     | ✔️      |
-| 03  | Squares With Three Sides   | Rust     | ✔️      |
-| 04  | Security Through Obscurity | Kotlin   | ✔️      |
+| Day | Description                     | Language | Known* |
+| --- | ------------------------------- | -------- | ------ |
+| 01  | No Time for a Taxicab           | Python   | ✔️      |
+| 02  | Bathroom Security               | Java     | ✔️      |
+| 03  | Squares With Three Sides        | Rust     | ✔️      |
+| 04  | Security Through Obscurity      | Kotlin   | ✔️      |
+| 05  | How About a Nice Game of Chess? | Lua      | ✘      |
 
 ## Advent of Code
 
