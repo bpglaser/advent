@@ -2,13 +2,6 @@
 #include <string.h>
 
 int is_abba(char *line) {
-    int b = line[0] != line[1] && line[1] == line[2] && line[0] == line[3];
-    if (b) {
-        for (size_t i = 0; i < 4; i++) {
-            printf("%c", line[i]);
-        }
-        printf("\n");
-    }
     return line[0] != line[1] && line[1] == line[2] && line[0] == line[3];
 }
 
@@ -53,7 +46,6 @@ int main(int argc, char const *argv[]) {
     int count = 0;
     while (fgets(line, 1024, fp) != NULL) {
         supports_tls(line, &count);
-        // break;
     }
     printf("count: %i\n", count);
 
