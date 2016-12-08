@@ -12,6 +12,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 05  | How About a Nice Game of Chess? | Lua      | ✘      |
 | 06  | Signals and Noise               | Ruby     | ✘      |
 | 07  | Internet Protocol Version 7     | c        | ✘      |
+| 08  | Two-Factor Authentication       | Python   | ✔️      |
 
 ## Advent of Code
 
