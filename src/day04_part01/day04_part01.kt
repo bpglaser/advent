@@ -3,7 +3,7 @@ package day04_part01
 import java.io.File
 
 fun main(args: Array<String>) {
-    val total = File(args.firstOrNull() ?: "input/day04_part01.txt")
+    val total = File(args.firstOrNull() ?: "input/day04.txt")
             .readLines()
             .filter(::isValid)
             .map(::extractSectorID)

@@ -1,4 +1,4 @@
-lines = File.open("../../input/day06_part01.txt").read().lines().each { |line| line.strip! }
+lines = File.open("../../input/day06.txt").read().lines().each { |line| line.strip! }
 result = ""
 (0..lines[0].length - 1).each { |column|
     totals = Hash.new(0)

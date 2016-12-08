@@ -3,7 +3,7 @@ package day04_part02
 import java.io.File
 
 fun main(args: Array<String>) {
-    val sector = File(args.firstOrNull() ?: "input/day04_part02.txt")
+    val sector = File(args.firstOrNull() ?: "input/day04.txt")
             .readLines()
             .filter(::isValid)
             .map { decrypt(it) to extractSectorID(it) }
