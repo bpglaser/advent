@@ -13,6 +13,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 06  | Signals and Noise               | Ruby     | ✘      |
 | 07  | Internet Protocol Version 7     | c        | ✘      |
 | 08  | Two-Factor Authentication       | Python   | ✔️      |
+| 09  | Explosives in Cyberspace        | Java     | ✔️      |
 
 ## Advent of Code
 
