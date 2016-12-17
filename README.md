@@ -3,18 +3,19 @@
 This project chronicles my efforts in completing ["Advent of Code" by Eric Wastl](http://adventofcode.com/2016).
 During which, I shall attempt to use a variety of languages and paradigms.
 
-| Day | Description                     | Language | Known* |
-| --- | ------------------------------- | -------- | ------ |
-| 01  | No Time for a Taxicab           | Python   | ✔️      |
-| 02  | Bathroom Security               | Java     | ✔️      |
-| 03  | Squares With Three Sides        | Rust     | ✔️      |
-| 04  | Security Through Obscurity      | Kotlin   | ✔️      |
-| 05  | How About a Nice Game of Chess? | Lua      | ✘      |
-| 06  | Signals and Noise               | Ruby     | ✘      |
-| 07  | Internet Protocol Version 7     | c        | ✘      |
-| 08  | Two-Factor Authentication       | Python   | ✔️      |
-| 09  | Explosives in Cyberspace        | Java     | ✔️      |
-| 10  | Balance Bots                    | Rust     | ✔️      |
+| Day | Description                            | Language | Known* |
+| --- | -------------------------------------- | -------- | ------ |
+| 01  | No Time for a Taxicab                  | Python   | ✔️      |
+| 02  | Bathroom Security                      | Java     | ✔️      |
+| 03  | Squares With Three Sides               | Rust     | ✔️      |
+| 04  | Security Through Obscurity             | Kotlin   | ✔️      |
+| 05  | How About a Nice Game of Chess?        | Lua      | ✘      |
+| 06  | Signals and Noise                      | Ruby     | ✘      |
+| 07  | Internet Protocol Version 7            | c        | ✘      |
+| 08  | Two-Factor Authentication              | Python   | ✔️      |
+| 09  | Explosives in Cyberspace               | Java     | ✔️      |
+| 10  | Balance Bots                           | Rust     | ✔️      |
+| 11  | Radioisotope Thermoelectric Generators | Kotlin   | ✔️      |
 
 ## Advent of Code
 
