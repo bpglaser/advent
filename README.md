@@ -16,6 +16,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 09  | Explosives in Cyberspace               | Java     | ✔️      |
 | 10  | Balance Bots                           | Rust     | ✔️      |
 | 11  | Radioisotope Thermoelectric Generators | Kotlin   | ✔️      |
+| 12  | Leonardo's Monorail                    | Python   | ✔️      |
 
 ## Advent of Code
 
