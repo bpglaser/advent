@@ -3,7 +3,7 @@ package day11_part01
 import java.io.File
 
 fun main(args: Array<String>) {
-    val input = File(args.firstOrNull() ?: "input/day11.txt").readLines()
+    val input = File(args.firstOrNull() ?: "input/day11_part01.txt").readLines()
     val checkedStates = hashSetOf<ShortRepresentation>()
     val stack = arrayListOf(parseInitialState(input))
 
