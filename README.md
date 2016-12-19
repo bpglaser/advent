@@ -17,6 +17,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 10  | Balance Bots                           | Rust     | ✔️      |
 | 11  | Radioisotope Thermoelectric Generators | Kotlin   | ✔️      |
 | 12  | Leonardo's Monorail                    | Python   | ✔️      |
+| 13  | A Maze of Twisty Little Cubicles       | Rust     | ✔️      |
 
 ## Advent of Code
 
