@@ -18,6 +18,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 11  | Radioisotope Thermoelectric Generators | Kotlin   | ✔️      |
 | 12  | Leonardo's Monorail                    | Python   | ✔️      |
 | 13  | A Maze of Twisty Little Cubicles       | Rust     | ✔️      |
+| 14  | One-Time Pad                           | Rust     | ✔️      |
 
 ## Advent of Code
 
