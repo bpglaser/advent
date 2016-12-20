@@ -9,23 +9,18 @@ fn main() {
     let salt = get_salt();
 
     let mut pending_keys: Vec<Key> = vec![];
-    let mut finalized_key_indexes: Vec<usize> = vec![];
 
     let mut index: usize = 0;
-    'outer: loop {
+    while pending_keys.iter().take_while(|k| k.finalization.is_some()).count() < 64 {
         let source = format!("{}{}", salt, index);
         let hash = md5_hash(&source);
 
         if let Some(c) = find_repeated_sequence(&hash, 5) {
-            for (i, key) in pending_keys.iter_mut().enumerate() {
+            for key in pending_keys.iter_mut() {
                 if key.repeating_char == c && index - key.discovery <= 1000 {
                     println!("Promoting: {:?}", key);
                     key.finalization = Some(index);
                     key.finalization_hash = Some(hash.to_owned());
-                    finalized_key_indexes.push(i);
-                    if finalized_key_indexes.len() == 64 {
-                        break 'outer;
-                    }
                 }
             }
         }
@@ -35,11 +30,13 @@ fn main() {
             pending_keys.push(new_key);
         }
 
+        pending_keys.retain(|k| k.finalization.is_some() || index - k.discovery <= 1000);
+
         index += 1;
     }
 
-    let finalized_keys: Vec<&Key> = finalized_key_indexes.iter().map(|i| &pending_keys[*i]).collect();
-    let last_key = finalized_keys.last().unwrap();
+    pending_keys.truncate(64);
+    let last_key = pending_keys.last().unwrap();
     println!("Answer key: {:?}", last_key);
     println!("Answer: {}", last_key.discovery);
 }
