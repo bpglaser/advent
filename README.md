@@ -20,6 +20,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 13  | A Maze of Twisty Little Cubicles       | Rust     | ✔️      |
 | 14  | One-Time Pad                           | Rust     | ✔️      |
 | 15  | Timing is Everything                   | Rust     | ✔️      |
+| 16  | Dragon Checksum                        | Rust     | ✔️      |
 
 ## Advent of Code
 
