@@ -12,10 +12,10 @@ fn main() {
     }
 
     state.truncate(disk_size);
-    println!("[Truncated]\t\t{}", state);
+    println!("[Truncated]\t{}", state);
 
     let sum = checksum(&state);
-    println!("[Checksum]\t\t{}", sum);
+    println!("[Checksum]\t{}", sum);
 }
 
 fn dragonify(a: &mut String) {
