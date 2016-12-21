@@ -17,20 +17,16 @@ fn main() {
 fn gen_row(previous: &str) -> String {
     let mut row = String::new();
 
-    for (i, center) in previous.char_indices() {
+    let chars: Vec<char> = previous.chars().collect();
+
+    for i in 0..chars.len() {
         let mut left = '.';
-        if i as isize - 1 >= 0 {
-        left = previous.chars().nth(i - 1).unwrap_or('.');
+        if (i as isize) - 1 >= 0 {
+            left = previous.chars().nth(i - 1).unwrap();
         }
         let right = previous.chars().nth(i + 1).unwrap_or('.');
 
-        if left == '^' && center == '^' && right == '.' {
-            row.push('^');
-        } else if left == '.' && center == '^' && right == '^' {
-            row.push('^');
-        } else if left == '^' && center == '.' && right == '.' {
-            row.push('^');
-        } else if left == '.' && center == '.' && right == '^' {
+        if (left == '^') ^ (right == '^') {
             row.push('^');
         } else {
             row.push('.');
