@@ -21,6 +21,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 14  | One-Time Pad                           | Rust     | ✔️      |
 | 15  | Timing is Everything                   | Rust     | ✔️      |
 | 16  | Dragon Checksum                        | Rust     | ✔️      |
+| 17  | Two Steps Forward                      | Rust     | ✔️      |
 
 ## Advent of Code
 
