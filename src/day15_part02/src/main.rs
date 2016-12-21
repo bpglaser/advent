@@ -14,7 +14,6 @@ fn main() {
             if disc.rotate(time + offset + 1) != 0 {
                 time += 1;
                 continue 'outer;
-            } else {
             }
         }
         break;
