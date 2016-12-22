@@ -24,6 +24,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 17  | Two Steps Forward                      | Rust     | ✔️      |
 | 18  | Like a Rogue                           | Rust     | ✔️      |
 | 19  | An Elephant Named Joseph               | Rust     | ✔️      |
+| 20  | Firewall Rules                         | Rust     | ✔️      |
 
 ## Advent of Code
 
