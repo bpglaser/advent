@@ -25,6 +25,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 18  | Like a Rogue                           | Rust     | ✔️      |
 | 19  | An Elephant Named Joseph               | Rust     | ✔️      |
 | 20  | Firewall Rules                         | Rust     | ✔️      |
+| 21  | Scrambled Letters and Hash             | Rust     | ✔️      |
 
 ## Advent of Code
 
