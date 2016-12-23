@@ -26,6 +26,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 19  | An Elephant Named Joseph               | Rust     | ✔️      |
 | 20  | Firewall Rules                         | Rust     | ✔️      |
 | 21  | Scrambled Letters and Hash             | Rust     | ✔️      |
+| 22  | Grid Computing                         | Rust     | ✔️      |
 
 ## Advent of Code
 
