@@ -27,6 +27,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 20  | Firewall Rules                         | Rust     | ✔️      |
 | 21  | Scrambled Letters and Hash             | Rust     | ✔️      |
 | 22  | Grid Computing                         | Rust     | ✔️      |
+| 23  | Safe Cracking                          | Rust     | ✔️      |
 
 ## Advent of Code
 
