@@ -6,24 +6,97 @@ use std::io::Read;
 fn main() {
     let path = get_arg();
     let maze = load_maze(&path);
-    let zero = maze.iter()
-                    .flat_map(|row| row.iter())
-                    .find(|node| node.control.map_or_else(|| false, |n| n == 0))
-                    .unwrap();
-    let two = maze.iter()
-                    .flat_map(|row| row.iter())
-                    .find(|node| node.control.map_or_else(|| false, |n| n == 2))
-                    .unwrap();
 
-    let path = zero.pathfind(*two, &maze);
-    println!("path: {:?}", path);
-    println!("distance: {}", zero.distance(*two, &maze));
+    let mut control_nodes = find_nodes(&maze, |node| node.control.is_some());
+    control_nodes.sort_by_key(|node| node.control.unwrap());
+    let start = control_nodes[0];
 
-    // let routes = get_routes(&maze);
-    //
-    // for route in routes {
-    //     println!("Path from {:?} to {:?} is distance: {}", route.a, route.b, route.distance);
-    // }
+    let routes = get_routes(&maze);
+    println!("All routes:");
+    for route in routes.iter() {
+        println!("\t{:?}", route);
+    }
+    println!("Number of routes: {}", routes.len());
+
+    let optimal_route = find_optimal_route(start, &control_nodes, &routes);
+    let optimal_distance = sum_route(&optimal_route);
+
+    println!("Optimal route:");
+    for route in optimal_route {
+        println!("\t{:?}", route);
+    }
+    println!("Optimal distance: {}", optimal_distance);
+}
+
+fn find_optimal_route<'a>(start: Node, nodes: &[Node], routes: &'a [Route]) -> Vec<&'a Route> {
+    let mut optimal_route = None;
+
+    let permutations = get_node_permutations(nodes);
+    for mut permutation in permutations {
+        let mut possible_route = vec![];
+        let mut previous_node = permutation.remove(0);
+
+        if previous_node != start {
+            continue;
+        }
+
+        for next_node in permutation.iter() {
+            let route = routes.iter()
+                                .find(|route| route.is_between(previous_node, *next_node))
+                                .expect(&format!("Failed to find route between {:?} and {:?}", previous_node, next_node));
+            possible_route.push(route);
+            previous_node = *next_node;
+        }
+
+        if optimal_route.is_none() {
+            optimal_route = Some(possible_route);
+        } else {
+            if sum_route(&possible_route) < sum_route(optimal_route.as_ref().unwrap()) {
+                optimal_route = Some(possible_route);
+            }
+        }
+    }
+
+    optimal_route.expect("Failed to find optimal route")
+}
+
+fn sum_route(routes: &[&Route]) -> usize {
+    routes.iter().map(|route| route.distance).sum()
+}
+
+fn get_node_permutations(nodes: &[Node]) -> Vec<Vec<Node>> {
+    let mut permutation = clone_nodes(nodes);
+
+    let mut c = vec![0; nodes.len()];
+
+    let mut all_permutations = vec![clone_nodes(nodes)];
+
+    let mut i = 0;
+    while i < nodes.len() {
+        if c[i] < i {
+            if i % 2 == 0 {
+                let temp = permutation[0];
+                permutation[0] = permutation[i];
+                permutation[i] = temp;
+            } else {
+                let temp = permutation[c[i]];
+                permutation[c[i]] = permutation[i];
+                permutation[i] = temp;
+            }
+            all_permutations.push(clone_nodes(&permutation));
+            c[i] += 1;
+            i = 0;
+        } else {
+            c[i] = 0;
+            i += 1;
+        }
+    }
+
+    all_permutations
+}
+
+fn clone_nodes(nodes: &[Node]) -> Vec<Node> {
+    nodes.iter().cloned().collect()
 }
 
 #[derive(Debug)]
@@ -37,6 +110,10 @@ impl Route {
     fn new(a: Node, b: Node, distance: usize) -> Route {
         Route { a: a, b: b, distance: distance }
     }
+
+    fn is_between(&self, a: Node, b: Node) -> bool {
+        (self.a == a && self.b == b) || (self.a == b && self.b == a)
+    }
 }
 
 impl PartialEq for Route {
@@ -44,12 +121,7 @@ impl PartialEq for Route {
         if self.distance != other.distance {
             return false;
         }
-        if self.a == other.a && self.b == other.b {
-            return true;
-        } else if self.a == other.b && self.b == other.a {
-            return true;
-        }
-        false
+        self.is_between(other.a, other.b)
     }
 }
 
@@ -78,7 +150,7 @@ impl Node {
         }
     }
 
-    fn get_neighbors(&self, maze: &Vec<Vec<Node>>) -> Vec<Node> {
+    fn get_neighbors(&self, maze: &[Vec<Node>]) -> Vec<Node> {
         let mut neighbors = vec![];
         if self.y != 0 {
             if let Some(other) = maze.get(self.y - 1).and_then(|row| row.get(self.x)) {
@@ -99,11 +171,11 @@ impl Node {
         neighbors
     }
 
-    fn distance(&self, goal: Node, maze: &Vec<Vec<Node>>) -> usize {
+    fn distance(&self, goal: Node, maze: &[Vec<Node>]) -> usize {
         self.pathfind(goal, maze).len()
     }
 
-    fn pathfind(&self, goal: Node, maze: &Vec<Vec<Node>>) -> Vec<Node> {
+    fn pathfind(&self, goal: Node, maze: &[Vec<Node>]) -> Vec<Node> {
         let mut frontier: Vec<Node> = vec![*self];
         let mut parent_map: HashMap<Node, Option<Node>> = HashMap::new();
         parent_map.insert(*self, None);
@@ -140,18 +212,16 @@ fn reconstruct_path(goal: Node, mut parent_map: HashMap<Node, Option<Node>>) -> 
     path
 }
 
-fn get_routes(maze: &Vec<Vec<Node>>) -> Vec<Route> {
+fn get_routes(maze: &[Vec<Node>]) -> Vec<Route> {
     let mut routes = vec![];
 
     let controls = get_controls(maze);
     for a in controls.iter() {
         for b in controls.iter() {
             if a != b {
-                println!("Finding route between: {:?} and {:?}", a, b);
                 let distance = a.distance(*b, maze);
                 let route = Route::new(*a, *b, distance);
                 if !routes.contains(&route) {
-                    println!("Found new route: {:?}", route);
                     routes.push(route);
                 }
             }
@@ -161,7 +231,7 @@ fn get_routes(maze: &Vec<Vec<Node>>) -> Vec<Route> {
     routes
 }
 
-fn get_controls(maze: &Vec<Vec<Node>>) -> Vec<Node> {
+fn get_controls(maze: &[Vec<Node>]) -> Vec<Node> {
     let mut controls = vec![];
     for row in maze.iter() {
         for node in row.iter() {
@@ -171,6 +241,10 @@ fn get_controls(maze: &Vec<Vec<Node>>) -> Vec<Node> {
         }
     }
     controls
+}
+
+fn find_nodes<P>(nodes: &[Vec<Node>], predicate: P) -> Vec<Node> where P: Fn(&Node) -> bool {
+    nodes.iter().flat_map(|row| row.iter()).filter(|node| predicate(node)).map(|node| *node).collect()
 }
 
 fn load_maze(path: &str) -> Vec<Vec<Node>> {
