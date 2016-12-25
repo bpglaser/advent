@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env::args;
 use std::fs::File;
 use std::io::Read;
@@ -5,12 +6,15 @@ use std::io::Read;
 fn main() {
     let path = get_path();
     let nodes = load_nodes(&path);
+    let width = nodes[0].len();
 
-    for row in nodes.iter() {
-        for node in row.iter() {
+    let mut empty_point = None;
+    for (y, row) in nodes.iter().enumerate() {
+        for (x, node) in row.iter().enumerate() {
             if node.used == 0 {
                 print!("_");
-            } else if node.used > 100 {
+                empty_point = Some(Point::new(x, y));
+            } else if node.is_wall() {
                 print!("#");
             } else {
                 print!(".");
@@ -18,54 +22,114 @@ fn main() {
         }
         println!();
     }
+    let empty_point = empty_point.expect("Unable to find empty node");
+    let goal_point = Point::new(width - 2, 0);
+
+    let dist_to_goal = empty_point.pathfind_to(goal_point, &nodes).len();
+    let answer = 1 + dist_to_goal + (width - 2) * 5;
+    println!("Answer : {}", answer);
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Node {
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+struct Point {
     x: usize,
     y: usize,
+}
+
+impl Point {
+    fn new(x: usize, y: usize) -> Point {
+        Point { x: x, y: y }
+    }
+
+    fn get_neighbors(&self, maze: &[Vec<Node>]) -> Vec<Point> {
+        let mut neighbors = vec![];
+        if self.y != 0 {
+            if let Some(other) = maze.get(self.y - 1).and_then(|row| row.get(self.x)) {
+                if !other.is_wall() {
+                    neighbors.push(Point::new(self.x, self.y - 1));
+                }
+            }
+        }
+        if let Some(other) = maze.get(self.y + 1).and_then(|row| row.get(self.x)) {
+            if !other.is_wall() {
+                neighbors.push(Point::new(self.x, self.y + 1));
+            }
+        }
+        if self.x != 0 {
+            if let Some(other) = maze.get(self.y).and_then(|row| row.get(self.x - 1)) {
+                if !other.is_wall() {
+                    neighbors.push(Point::new(self.x - 1, self.y));
+                }
+            }
+        }
+        if let Some(other) = maze.get(self.y).and_then(|row| row.get(self.x + 1)) {
+            if !other.is_wall() {
+                neighbors.push(Point::new(self.x + 1, self.y));
+            }
+        }
+        neighbors
+    }
+
+    fn pathfind_to(&self, goal: Point, maze: &[Vec<Node>]) -> Vec<Point> {
+        let mut frontier: Vec<Point> = vec![*self];
+        let mut parent_map: HashMap<Point, Option<Point>> = HashMap::new();
+        parent_map.insert(*self, None);
+
+        while frontier.len() != 0 {
+            let point = frontier.remove(0);
+
+            if point == goal {
+                return reconstruct_path(point, parent_map);
+            }
+
+            for neighbor in point.get_neighbors(maze) {
+                if !parent_map.contains_key(&neighbor) {
+                    parent_map.insert(neighbor, Some(point));
+                    frontier.push(neighbor);
+                }
+            }
+        }
+        panic!("Unable to find path")
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct Node {
     size: usize,
     used: usize,
     avail: usize,
 }
 
 impl Node {
-    fn from_line(line: &str) -> Node {
+    fn from_line(line: &str) -> (usize, usize, Node) {
         let words: Vec<&str> = line.split_whitespace().map(|s| s.trim()).collect();
         let filesystem = words[0];
         let (x, y) = parse_coords(&filesystem);
-        Node {
-            x: x,
-            y: y,
+        (x, y, Node {
             size: parse_volume(words[1]),
             used: parse_volume(words[2]),
             avail: parse_volume(words[3]),
-        }
+        })
+    }
+
+    fn is_wall(&self) -> bool {
+        self.used > 100
     }
 }
 
-// struct Link {
-//     a: Node,
-//     b: Node,
-// }
-//
-// impl Link {
-//     fn new(a: Node, b: Node) -> Link {
-//         Link { a: a, b: b }
-//     }
-// }
-//
-// impl PartialEq for Link {
-//     fn eq(&self, other: &Link) -> bool {
-//         if self.a == other.a && self.b == other.b {
-//             return true;
-//         }
-//         if self.a == other.b && self.b == other.a {
-//             return true;
-//         }
-//         false
-//     }
-// }
+fn reconstruct_path(goal: Point, mut parent_map: HashMap<Point, Option<Point>>) -> Vec<Point> {
+    let mut path = vec![goal];
+
+    let mut working_node = goal;
+    while let Some(Some(parent)) = parent_map.remove(&working_node) {
+        path.push(parent);
+        working_node = parent;
+    }
+
+    path.pop();
+    path.reverse();
+    path
+}
 
 fn parse_coords(s: &str) -> (usize, usize) {
     let mut x_encountered = false;
@@ -99,13 +163,15 @@ fn load_nodes(path: &str) -> Vec<Vec<Node>> {
     let mut buf = String::new();
     file.read_to_string(&mut buf).expect(&format!("Error reading from: {}", path));
 
+    let mut all_nodes: Vec<_> = buf.lines().skip(2).map(Node::from_line).collect();
+    all_nodes.sort_by_key(|&(x, ..)| x); // Pre-sorting the list ensures nodes are appended to each row in order
+
     let mut array: Vec<Vec<Node>> = vec![];
 
-    for node in buf.lines().skip(2).map(Node::from_line) {
-        loop {
-            if let Some(row) = array.get_mut(node.y) {
+    for &mut (_, y, node) in all_nodes.iter_mut() {
+        loop { // Loop ensures that rows are initialized regardless of y pos input
+            if let Some(row) = array.get_mut(y) {
                 row.push(node);
-                row.sort_by_key(|k| k.x);
                 break;
             }
             array.push(vec![]);
