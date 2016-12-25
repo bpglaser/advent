@@ -29,6 +29,7 @@ During which, I shall attempt to use a variety of languages and paradigms.
 | 22  | Grid Computing                         | Rust     | ✔️      |
 | 23  | Safe Cracking                          | Rust     | ✔️      |
 | 24  | Air Duct Spelunking                    | Rust     | ✔️      |
+| 25  | Clock Signal                           | Rust     | ✔️      |
 
 ## Advent of Code
 

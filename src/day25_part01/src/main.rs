@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::env::args;
 use std::fs::File;
 use std::io::Read;
@@ -11,31 +12,43 @@ fn main() {
     let mut execution_index: isize = 0;
     let mut register = [0; 4];
 
-    register[0] = 0; // initial state
+    let mut initial_a = 0;
+    register[0] = initial_a;
+    let mut history: Cell<u64> = Cell::new(0);
 
     while execution_index >= 0 && (execution_index as usize) < instructions.len() {
         let update;
         {
             let instruction = instructions.get(execution_index as usize).unwrap();
-            // print!("{:?} => ", instruction);
-            let (offset, opt) = instruction.execute(&mut register);
+            let (offset, opt) = instruction.execute(&mut register, &mut history);
             update = opt;
             execution_index += offset;
-            // println!("{:?}", register);
         }
+
         if let Some(value) = update {
             let offset = value.get(&register);
             let i = execution_index + offset - 1;
             if i >= 0 && (i as usize) < instructions.len() {
                 let i = i as usize;
-                // print!("Toggling: {:?} at [{}] ", instructions[i], i);
                 instructions[i] = instructions[i].toggle();
-                // println!("to: {:?}", instructions[i]);
+            }
+        }
+
+        let raw_history = history.get();
+        if raw_history >= 0b0101010101010101010101010101010101010101010101010101010101010101 {
+            if raw_history == 0b0101010101010101010101010101010101010101010101010101010101010101 {
+                break;
+            } else {
+                execution_index = 0;
+                register = [0; 4];
+                initial_a += 1;
+                register[0] = initial_a;
+                history.set(0);
             }
         }
     }
 
-    println!("{:?}", register);
+    println!("Initial [a] value: {} yields the binary pattern", initial_a);
 }
 
 #[derive(Clone, Copy,Debug)]
@@ -54,7 +67,7 @@ impl Value {
                 "b" => 1,
                 "c" => 2,
                 "d" => 3,
-                _ => panic!("Invalid register")
+                _ => panic!("Invalid register"),
             };
             Value::Letter(n)
         }
@@ -104,7 +117,10 @@ impl Instruction {
         }
     }
 
-    fn execute(&self, register: &mut [isize; 4]) -> (isize, Option<Value>) {
+    fn execute(&self,
+               register: &mut [isize; 4],
+               history: &mut Cell<u64>)
+               -> (isize, Option<Value>) {
         match self {
             &Cpy(ref x, ref y) => {
                 if let Some(y) = y.get_value() {
@@ -132,7 +148,12 @@ impl Instruction {
                 return (1, Some(*x));
             }
             &Out(ref x) => {
-                println!("{}", x.get(&register));
+                let mut raw_history = history.get();
+                raw_history <<= 1;
+                if x.get(&register) == 1 {
+                    raw_history += 1;
+                }
+                history.set(raw_history);
             }
         }
         (1, None)
@@ -145,7 +166,7 @@ impl Instruction {
             &Tgl(x) => Inc(x),
             &Jnz(x, y) => Cpy(x, y),
             &Cpy(x, y) => Jnz(x, y),
-            &Out(x) => panic!("Unable to toggle out: {:?}", x),
+            _ => panic!("Unable to toggle: {:?}", self),
         }
     }
 }
