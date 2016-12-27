@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use std::env::args;
 use std::fs::File;
 use std::io::Read;
@@ -14,7 +13,7 @@ fn main() {
 
     let mut initial_a = 0;
     register[0] = initial_a;
-    let mut history: Cell<u64> = Cell::new(0);
+    let mut history: u64 = 0;
 
     while execution_index >= 0 && (execution_index as usize) < instructions.len() {
         let update;
@@ -34,16 +33,15 @@ fn main() {
             }
         }
 
-        let raw_history = history.get();
-        if raw_history >= 0b0101010101010101010101010101010101010101010101010101010101010101 {
-            if raw_history == 0b0101010101010101010101010101010101010101010101010101010101010101 {
+        if history >= 0b0101010101010101010101010101010101010101010101010101010101010101 {
+            if history == 0b0101010101010101010101010101010101010101010101010101010101010101 {
                 break;
             } else {
                 execution_index = 0;
                 register = [0; 4];
                 initial_a += 1;
                 register[0] = initial_a;
-                history.set(0);
+                history = 0;
             }
         }
     }
@@ -117,10 +115,7 @@ impl Instruction {
         }
     }
 
-    fn execute(&self,
-               register: &mut [isize; 4],
-               history: &mut Cell<u64>)
-               -> (isize, Option<Value>) {
+    fn execute(&self, register: &mut [isize; 4], history: &mut u64) -> (isize, Option<Value>) {
         match self {
             &Cpy(ref x, ref y) => {
                 if let Some(y) = y.get_value() {
@@ -148,12 +143,10 @@ impl Instruction {
                 return (1, Some(*x));
             }
             &Out(ref x) => {
-                let mut raw_history = history.get();
-                raw_history <<= 1;
+                *history <<= 1;
                 if x.get(&register) == 1 {
-                    raw_history += 1;
+                    *history += 1;
                 }
-                history.set(raw_history);
             }
         }
         (1, None)
