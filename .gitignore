@@ -1,4 +1,5 @@
 .idea/
 out/
-src/*/target/
+2015/src/*/target/
+2016/src/*/target/
 *.exe
