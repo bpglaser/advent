@@ -2,8 +2,6 @@ use std::env::args;
 use std::fs::File;
 use std::io::Read;
 
-// 392 too high
-// 176 too high
 fn main() {
     let mut count = 0;
     let lines = read_lines();
