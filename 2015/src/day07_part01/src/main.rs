@@ -7,11 +7,10 @@ use Operation::*;
 
 fn main() {
     let mut wires: HashMap<&str, Option<u16>> = HashMap::new();
-    let mut stack: Vec<Gate> = load_lines().iter().map(|s| Gate::parse(&s)).collect();
+    let mut gates: Vec<Gate> = load_lines().iter().map(|s| Gate::parse(&s)).collect();
 
-    while stack.len() > 0 {
-
-    }
+    let mut to_remove = vec![];
+    for gate in gates
 
     let mut wires: Vec<(&str, Option<u16>)> = wires.into_iter().collect();
     wires.sort_by_key(|&(k, _)| k);
@@ -20,17 +19,7 @@ fn main() {
     }
 }
 
-enum Value {
-    Raw(isize),
-    Pointer(String),
-}
-
-impl Value {
-    fn parse(s: &str) -> Value {
-        unimplemented!()
-    }
-}
-
+#[derive(PartialEq)]
 enum Operation {
     NOT,
     AND,
@@ -41,8 +30,8 @@ enum Operation {
 }
 
 struct Gate {
-    input_a: Value,
-    input_b: Option<Value>,
+    input_a: String,
+    input_b: Option<String>,
     operation: Operation,
     output: String,
 }
@@ -53,11 +42,15 @@ impl Gate {
 
         let operation;
         let input_a;
+        let mut input_b = None;
+        let output = (*words.last().unwrap()).to_owned();
 
         if words[0] == "NOT" {
             operation = NOT;
-            input_a = Value::parse(words[1]);
+            input_a = words[1].to_owned();
         } else {
+            input_a = words[0].to_owned();
+
             operation = match words[1] {
                 "AND" => AND,
                 "OR" => OR,
@@ -65,11 +58,14 @@ impl Gate {
                 "RSHIFT" => RSHIFT,
                 "->" => NOOP,
                 _ => panic!("Invalid operator"),
+            };
+
+            if operation != NOOP {
+                input_b = Some(words[2].to_owned());
             }
+
         }
 
-        let input_b = None;
-        let output;
         Gate { input_a: input_a, input_b: input_b, operation: operation, output: output }
     }
 }
