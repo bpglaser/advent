@@ -22,7 +22,9 @@ fn find_best_spell_path(player: Actor, boss: Actor) -> Vec<Spell> {
     while stack.len() > 0 {
         let current_state = stack.remove(0);
 
-        for new_state in current_state.get_options() {
+        // todo effects and attacks
+
+        for new_state in State::get_options(&current_state) {
             if new_state.is_victory() {
                 return new_state.get_spell_path();
             }
@@ -63,11 +65,15 @@ struct Actor {
     hp: isize,
     mana: isize,
     armor: isize, // Armor is ignored for spells
+
+    shield_timer: Option<isize>,
+    posion_timer: Option<isize>,
+    recharge_timer: Option<isize>,
 }
 
 impl Actor {
     fn new(hp: isize, mana: isize, armor: isize) -> Self {
-        Actor { hp: hp, mana: mana, armor: armor }
+        Actor { hp: hp, mana: mana, armor: armor, shield_timer: None, posion_timer: None, recharge_timer: None }
     }
 }
 
@@ -78,40 +84,66 @@ struct State {
 }
 
 impl State {
-    fn new_root(player: Actor, boss: Actor) -> Self {
-        State { player: player, boss: boss, parent: None }
+    fn new_root(player: Actor, boss: Actor) -> Rc<Self> {
+        Rc::new(State { player: player, boss: boss, parent: None })
     }
 
-    fn new_child(&self, creation_spell: Spell) -> Self {
-        State { player: self.player, boss: self.boss, parent: Some((Rc::new(self), creation_spell)) }
+    fn new_child(parent: &Rc<Self>, creation_spell: Spell) -> Self {
+        let mut new_state = State { 
+            player: parent.player,
+            boss: parent.boss,
+            parent: Some((parent.clone(), creation_spell)),
+        };
+        new_state.player.mana -= creation_spell.mana_cost();
+        new_state
     }
 
-    fn apply_spell(&self, spell: Spell) -> Option<State> {
+    fn apply_spell(parent: &Rc<Self>, spell: Spell) -> Option<Rc<State>> {
+        let mut child = State::new_child(parent, MagicMissile);
+        
         match spell {
             MagicMissile => {
-                let mut child = self.new_child(MagicMissile);
+                child.boss.hp -= 4;
             }
-            // Drain,
-            // Shield,
-            // Posion,
-            // Recharge,
-            _ => unimplemented!()
+            Drain => {
+                child.boss.hp -= 2;
+                child.player.hp += 2;
+            }
+            Shield => {
+                if child.player.shield_timer.is_some() {
+                    return None;
+                }
+                child.player.shield_timer = Some(6);
+                child.player.armor += 7;
+            }
+            Posion => {
+                if child.boss.posion_timer.is_some() {
+                    return None;
+                }
+                child.boss.posion_timer = Some(6);
+            }
+            Recharge => {
+                if child.player.recharge_timer.is_some() {
+                    return None;
+                }
+                child.player.recharge_timer = Some(5);
+            }
         }
-        unimplemented!()
+        Some(Rc::new(child))
     }
 
-    fn is_victory(&self) -> bool {
-        self.player.mana >= MIN_SPELL_COST && self.player.hp > 0 && self.boss.hp <= 0
-    }
-
-    fn get_options(&self) -> Vec<Self> {
+    fn get_options(parent: &Rc<Self>) -> Vec<Rc<Self>> {
         let mut options = vec![];
         for spell in Spell::get_all() {
-            if let Some(new_state) = self.apply_spell(spell) {
+            if let Some(new_state) = State::apply_spell(parent, spell) {
                 options.push(new_state);
             }
         }
         options
+    }
+
+    fn is_victory(&self) -> bool {
+        self.player.mana >= MIN_SPELL_COST && self.player.hp > 0 && self.boss.hp <= 0
     }
 
     fn get_spell_path(&self) -> Vec<Spell> {
