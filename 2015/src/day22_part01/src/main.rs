@@ -1,16 +1,20 @@
+use std::error::Error;
 use std::env::args;
-use std::rc::Rc;
 
+use GameSignal::*;
 use Spell::*;
 
-const MIN_SPELL_COST: isize = 53;
-
 fn main() {
-    let boss = get_boss();
-    let player = Actor::new(50, 500, 0);
+    let (player, boss) = get_input().expect("Invalid input");
 
     let spell_path = find_best_spell_path(player, boss);
-    let mana: isize = spell_path.iter().map(|spell| spell.mana_cost() ).sum();
+    let mana: usize = spell_path.iter().map(|spell| spell.mana_cost() ).sum();
+
+    println!("Optimal spell path found:");
+
+    for spell in spell_path {
+        println!("{:?}", spell);
+    }
 
     println!("Answer: {}", mana);
 }
@@ -22,12 +26,41 @@ fn find_best_spell_path(player: Actor, boss: Actor) -> Vec<Spell> {
     while stack.len() > 0 {
         let current_state = stack.remove(0);
 
-        // todo effects and attacks
+        // ==== Evaluate Effects ====
 
-        for new_state in State::get_options(&current_state) {
-            if new_state.is_victory() {
-                return new_state.get_spell_path();
-            }
+        let current_state = match current_state.evaluate_effects() {
+            Ok(state) => state,
+            Err(BossDeath(spell_path)) => return spell_path,
+            _ => unreachable!(),
+        };
+
+        // ==== Cast Spell ====
+
+        for new_state in current_state.get_options() {
+
+            let new_state = match new_state {
+                Ok(state) => state,
+                Err(BossDeath(spell_path)) =>  return spell_path,
+                Err(OutOfMana) => continue,
+                e @ _ => panic!("NYE: {:?}", e), // todo handle
+            };
+
+            // ==== Evaluate Effects ====
+            
+            let new_state = match new_state.evaluate_effects() {
+                Ok(state) => state,
+                Err(BossDeath(spell_path)) => return spell_path,
+                _ => unreachable!(),
+            };
+
+            // ==== Boss Attack ====
+
+            let new_state = match new_state.attack_player() {
+                Ok(state) => state,
+                Err(PlayerDeath) => continue,
+                Err(_) => unreachable!(),
+            };
+
             stack.push(new_state);
         }
     }
@@ -35,7 +68,14 @@ fn find_best_spell_path(player: Actor, boss: Actor) -> Vec<Spell> {
     panic!("Unable to find spell path!");
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug)]
+enum GameSignal {
+    BossDeath(Vec<Spell>),
+    OutOfMana,
+    PlayerDeath,
+}
+
+#[derive(Copy, Clone, Debug)]
 enum Spell {
     MagicMissile,
     Drain,
@@ -49,7 +89,7 @@ impl Spell {
         vec![MagicMissile, Drain, Shield, Posion, Recharge]
     }
 
-    fn mana_cost(&self) -> isize {
+    fn mana_cost(&self) -> usize {
         match self {
             &MagicMissile => 53,
             &Drain => 73,
@@ -62,88 +102,162 @@ impl Spell {
 
 #[derive(Copy, Clone, Debug)]
 struct Actor {
-    hp: isize,
-    mana: isize,
-    armor: isize, // Armor is ignored for spells
-
-    shield_timer: Option<isize>,
-    posion_timer: Option<isize>,
-    recharge_timer: Option<isize>,
+    hp: usize,
+    mana: usize,
+    attack: usize, // Only boss can attack
+    armor: usize, // Armor is ignored for spells
 }
 
 impl Actor {
-    fn new(hp: isize, mana: isize, armor: isize) -> Self {
-        Actor { hp: hp, mana: mana, armor: armor, shield_timer: None, posion_timer: None, recharge_timer: None }
+    fn new(hp: usize, mana: usize, attack: usize) -> Self {
+        Actor { 
+            hp: hp,
+            mana: mana,
+            attack: attack,
+            armor: 0,
+        }
+    }
+
+    fn new_player(hp: usize, mana: usize) -> Self {
+        Actor::new(hp, mana, 0)
+    }
+
+    fn new_boss(hp: usize, attack: usize) -> Self {
+        Actor::new(hp, 0, attack)
     }
 }
 
+#[derive(Clone, Debug)]
 struct State {
     player: Actor,
     boss: Actor,
-    parent: Option<(Rc<State>, Spell)>,
+    parent: Option<(Box<State>, Spell)>,
+
+    shield_timer: usize,
+    posion_timer: usize,
+    recharge_timer: usize,
 }
 
 impl State {
-    fn new_root(player: Actor, boss: Actor) -> Rc<Self> {
-        Rc::new(State { player: player, boss: boss, parent: None })
+    fn new_root(player: Actor, boss: Actor) -> Self {
+        State {
+            player: player,
+            boss: boss,
+            parent: None,
+            shield_timer: 0,
+            posion_timer: 0,
+            recharge_timer: 0,
+        }
     }
 
-    fn new_child(parent: &Rc<Self>, creation_spell: Spell) -> Self {
-        let mut new_state = State { 
-            player: parent.player,
-            boss: parent.boss,
-            parent: Some((parent.clone(), creation_spell)),
-        };
-        new_state.player.mana -= creation_spell.mana_cost();
-        new_state
+    fn new_child(&self, creation_spell: Spell) -> Self {
+        let clone = self.clone();
+        State { 
+            player: self.player,
+            boss: self.boss,
+            parent: Some((Box::new(clone), creation_spell)),
+            shield_timer: self.shield_timer,
+            posion_timer: self.posion_timer,
+            recharge_timer: self.recharge_timer,
+        }
     }
 
-    fn apply_spell(parent: &Rc<Self>, spell: Spell) -> Option<Rc<State>> {
-        let mut child = State::new_child(parent, MagicMissile);
+    fn apply_spell(&self, spell: Spell) -> Result<Self, GameSignal> {
+        let mut child = self.new_child(spell);
+        if child.player.mana < spell.mana_cost() {
+            return Err(OutOfMana);
+        }
+        child.player.mana -= spell.mana_cost();
         
         match spell {
             MagicMissile => {
+                if child.boss.hp <= 4 {
+                    return Err(BossDeath(child.get_spell_path()));
+                }
                 child.boss.hp -= 4;
             }
             Drain => {
+                if child.boss.hp <= 2 {
+                    return Err(BossDeath(child.get_spell_path()));
+                }
                 child.boss.hp -= 2;
                 child.player.hp += 2;
             }
             Shield => {
-                if child.player.shield_timer.is_some() {
-                    return None;
+                if child.shield_timer == 0  {
+                    child.shield_timer = 6;
+                    child.player.armor += 7;
                 }
-                child.player.shield_timer = Some(6);
-                child.player.armor += 7;
             }
             Posion => {
-                if child.boss.posion_timer.is_some() {
-                    return None;
+                if child.posion_timer == 0 {
+                    child.posion_timer = 6;
                 }
-                child.boss.posion_timer = Some(6);
             }
             Recharge => {
-                if child.player.recharge_timer.is_some() {
-                    return None;
+                if child.recharge_timer == 0 {
+                    child.recharge_timer = 5;
                 }
-                child.player.recharge_timer = Some(5);
             }
         }
-        Some(Rc::new(child))
+
+        Ok(child)
     }
 
-    fn get_options(parent: &Rc<Self>) -> Vec<Rc<Self>> {
+    fn get_options(&self) -> Vec<Result<Self, GameSignal>> {
         let mut options = vec![];
         for spell in Spell::get_all() {
-            if let Some(new_state) = State::apply_spell(parent, spell) {
-                options.push(new_state);
-            }
+            options.push(self.apply_spell(spell));
         }
         options
     }
 
-    fn is_victory(&self) -> bool {
-        self.player.mana >= MIN_SPELL_COST && self.player.hp > 0 && self.boss.hp <= 0
+    fn evaluate_effects(&self) -> Result<Self, GameSignal> {
+        let mut state = self.clone();
+
+        // Shield effect
+        if state.shield_timer > 0 {
+            state.shield_timer -= 1;
+            if state.shield_timer == 0 {
+                state.player.armor = 0;
+            }
+        }
+        
+        // Posion effect
+        if state.posion_timer > 0 {
+            state.posion_timer -= 1;
+            if state.boss.hp <= 3 {
+                state.boss.hp = 0;
+                return Err(BossDeath(self.get_spell_path()));
+            }
+            state.boss.hp -= 3;
+        }
+
+        // Recharge effect
+        if state.recharge_timer > 0 {
+            state.recharge_timer -= 1;
+            state.player.mana += 101;
+        }
+
+        Ok(state)
+    }
+
+    fn attack_player(&self) -> Result<Self, GameSignal> {
+        let mut state = self.clone();
+
+        let attack_amount;
+        if state.boss.attack <= state.player.armor {
+            attack_amount = 1; // Attack does a minimum of 1 damage
+        } else {
+            attack_amount = state.boss.attack - state.player.armor;
+        }
+
+        if state.player.hp <= attack_amount {
+            return Err(GameSignal::PlayerDeath);
+        }
+        state.player.hp -= attack_amount;
+
+        Ok(state)
     }
 
     fn get_spell_path(&self) -> Vec<Spell> {
@@ -162,8 +276,16 @@ impl State {
     }
 }
 
-fn get_boss() -> Actor {
-    let args: Vec<isize> = args().skip(1).map(|s| s.parse().expect("Input must be number")).collect();
-    assert_eq!(2, args.len(), "Invalid number of args");
-    Actor::new(args[0], 0, args[1])
+fn get_input() -> Result<(Actor, Actor), Box<Error>> {
+    let args: Vec<_> = args().skip(1).collect();
+    assert_eq!(4, args.len(), "Invalid number of args");
+
+    let player = Actor::new_player(args[0].parse()?, args[1].parse()?);
+    let boss = Actor::new_boss(args[2].parse()?, args[3].parse()?);
+
+    println!("Input player: {:?}", player);
+    println!("Input boss: {:?}", boss);
+
+
+    Ok((player, boss))
 }
