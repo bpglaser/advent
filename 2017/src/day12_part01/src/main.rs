@@ -1,6 +1,6 @@
 extern crate petgraph;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::env::args;
 use std::fs::File;
 use std::io::Read;
@@ -14,7 +14,10 @@ fn main() {
     let path = args().nth(1).unwrap();
     let graph = load_input(&path);
 
-    let mut count = 0;
+    println!("{:?}", graph);
+
+    // Starts from one because root always connects to root.
+    let mut count = 1;
 
     let root = graph
         .node_indices()
@@ -23,12 +26,15 @@ fn main() {
 
     for idx in graph.node_indices() {
         if idx == root {
+            println!("skipping: {:?}", idx);
             continue;
         }
+        println!("finding path for: {:?}", idx);
         let mut dfs = Dfs::new(&graph, root);
         while let Some(nx) = dfs.next(&graph) {
-            if graph.node_weight(nx) == Some(&0) {
+            if nx == idx {
                 count += 1;
+                println!("{:?} connects to 0", idx);
             }
         }
     }
@@ -36,22 +42,22 @@ fn main() {
     println!("answer: {:?}", count);
 }
 
-fn load_input(path: &str) -> UnGraph<u32, u32> {
+fn load_input(path: &str) -> Graph<u32, u32> {
     let mut file = File::open(path).unwrap();
     let mut buf = String::new();
     file.read_to_string(&mut buf).unwrap();
 
-    let mut graph = Graph::new_undirected();
+    let mut graph = Graph::new();
 
     let mut temp_connections = HashMap::new();
     for (n, connections) in buf.lines().map(parse_line) {
         let idx = graph.add_node(n);
         temp_connections.insert(n, (idx, connections));
     }
-    for (n, &(idx, ref connections)) in &temp_connections {
+    for (_, &(idx1, ref connections)) in &temp_connections {
         for conn in connections {
             let (idx2, _) = temp_connections[&conn];
-            graph.add_edge(idx, idx2, 0);
+            graph.add_edge(idx1, idx2, 1);
         }
     }
 
