@@ -1,0 +1,10 @@
+[package]
+name = "day14_part02"
+version = "0.1.0"
+authors = ["bpglaser <bpglaser@gmail.com>"]
+
+[features]
+debug_print = []
+
+[dependencies]
+bit-vec = "0.4.4"
