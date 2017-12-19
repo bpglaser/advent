@@ -12,7 +12,7 @@ fn main() {
     println!("{}", grid);
 
     let start = grid.iter().find(|&(_, t)| t == &Vertical).unwrap().0;
-    println!("start pos: {:?}", start);
+    println!("Start position: {:?}", start);
     let mut turtle = Turtle::new(start);
 
     let mut path = vec![];
@@ -20,7 +20,7 @@ fn main() {
         path.push(token);
     }
 
-    println!("Path: {}", path.iter().filter(|t| t.is_letter()).map(|t| t.to_string()).collect::<String>());
+    println!("Path: {}", path.iter().filter_map(Token::as_letter).collect::<String>());
     println!("Total path length: {}", path.len());
 }
 
@@ -203,10 +203,10 @@ enum Token {
 }
 
 impl Token {
-    fn is_letter(&self) -> bool {
+    fn as_letter(&self) -> Option<char> {
         match self {
-            &Letter(_) => true,
-            _ => false,
+            &Letter(c) => Some(c),
+            _ => None,
         }
     }
 }
