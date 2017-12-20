@@ -17,6 +17,13 @@ impl Vector3 {
     }
 }
 
+impl<'a> From<&'a [i64]> for Vector3 {
+    fn from(slice: &[i64]) -> Self {
+        assert!(slice.len() == 3, "invalid number of numbers passed to Vector3::from");
+        Self { x: slice[0], y: slice[1], z: slice[2] }
+    }
+}
+
 impl ops::Add<Vector3> for Vector3 {
     type Output = Vector3;
 
