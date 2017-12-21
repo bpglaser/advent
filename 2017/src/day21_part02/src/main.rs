@@ -7,35 +7,37 @@ const DEFAULT_ITERATION_COUNT: u32 = 5;
 
 fn main() {
     let path = args().nth(1).expect("input path");
-    let iteration_count = args().nth(2).and_then(|s| s.parse().ok()).unwrap_or(DEFAULT_ITERATION_COUNT);
+    let iteration_count = args()
+        .nth(2)
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(DEFAULT_ITERATION_COUNT);
 
-    let rules = load_input(&path);
-    println!("Loaded {} rules from {}", rules.len(), path);
+    let input = load_input(&path);
+    let answer = do_puzzle(&input, iteration_count);
+    println!("Lit pixels: {}", answer);
+}
+
+fn load_input(path: &str) -> String {
+    let mut file = File::open(path).unwrap();
+    let mut buf = String::new();
+    file.read_to_string(&mut buf).unwrap();
+    buf
+}
+
+fn do_puzzle(input: &str, iteration_count: u32) -> usize {
+    let rules: Vec<Rule> = input.trim().lines().map(Rule::from).collect();
 
     let mut grid = Grid::starting_pattern();
 
-    println!("===== [ {} ] =====\n", 0);
-    println!("{}", grid);
-
-    for i in 0..iteration_count {
+    for _ in 0..iteration_count {
         let mut all_enhanced = vec![];
         for sub_grid in grid.subdivide() {
             let enhanced_sub_grid = sub_grid.enhance(&rules);
             all_enhanced.push(enhanced_sub_grid);
         }
         grid = Grid::from_sub_grids(&all_enhanced);
-
-        println!("===== [ {} ] =====\n", i + 1);
-        println!("{}", grid);
     }
-    println!("Lit pixels: {}", grid.count_hash_pixels());
-}
-
-fn load_input(path: &str) -> Vec<Rule> {
-    let mut file = File::open(path).unwrap();
-    let mut buf = String::new();
-    file.read_to_string(&mut buf).unwrap();
-    buf.trim().lines().map(Rule::from).collect()
+    grid.count_hash_pixels()
 }
 
 #[derive(Debug)]
@@ -68,7 +70,7 @@ impl Rule {
 
     fn match_grid_rotations(&self, grid: &Grid) -> bool {
         let mut rotated_grid = grid.rotate();
-        for _ in 0..3 { 
+        for _ in 0..3 {
             if rotated_grid == self.predicate {
                 return true;
             }
@@ -105,7 +107,12 @@ impl Grid {
 
     fn from_sub_grids(sub_grids: &[Grid]) -> Self {
         let sub_grid_size = sub_grids[0].size;
-        assert!(sub_grids.iter().skip(1).all(|grid| sub_grid_size == grid.size));
+        assert!(
+            sub_grids
+                .iter()
+                .skip(1)
+                .all(|grid| sub_grid_size == grid.size)
+        );
 
         let sub_grids_width = (sub_grids.len() as f64).sqrt() as usize;
         let size = sub_grids_width * sub_grid_size;
@@ -114,7 +121,8 @@ impl Grid {
 
         for y in 0..size {
             for x in 0..size {
-                let sub_grid = &sub_grids[(x / sub_grid_size) + (y / sub_grid_size) * sub_grids_width];
+                let sub_grid =
+                    &sub_grids[(x / sub_grid_size) + (y / sub_grid_size) * sub_grids_width];
                 let pixel = sub_grid.get(x % sub_grid_size, y % sub_grid_size);
                 pixels.push(*pixel);
             }
@@ -128,7 +136,9 @@ impl Grid {
     }
 
     fn set(&mut self, x: usize, y: usize, pixel: Pixel) {
-        *self.pixels.get_mut(x + y * self.size).expect("set in bounds") = pixel;
+        *self.pixels
+            .get_mut(x + y * self.size)
+            .expect("set in bounds") = pixel;
     }
 
     fn subdivide(&self) -> Vec<Self> {
@@ -141,12 +151,16 @@ impl Grid {
         };
 
         let number_of_sub_grids_per_width = self.size / sub_grid_size;
-        let total_number_of_sub_grids = number_of_sub_grids_per_width * number_of_sub_grids_per_width;
-        let mut sub_grids: Vec<Grid> = (0..total_number_of_sub_grids).map(|_| Grid::default_of_size(sub_grid_size)).collect();
-        
+        let total_number_of_sub_grids =
+            number_of_sub_grids_per_width * number_of_sub_grids_per_width;
+        let mut sub_grids: Vec<Grid> = (0..total_number_of_sub_grids)
+            .map(|_| Grid::default_of_size(sub_grid_size))
+            .collect();
+
         for y in 0..self.size {
             for x in 0..self.size {
-                let sub_grid = &mut sub_grids[(x / sub_grid_size) + (y / sub_grid_size) * number_of_sub_grids_per_width];
+                let sub_grid = &mut sub_grids
+                    [(x / sub_grid_size) + (y / sub_grid_size) * number_of_sub_grids_per_width];
                 let pixel = self.get(x, y);
                 sub_grid.set(x % sub_grid_size, y % sub_grid_size, *pixel);
             }
@@ -157,7 +171,10 @@ impl Grid {
 
     fn enhance(&self, rules: &[Rule]) -> Self {
         match rules.iter().find(|rule| rule.matches(self)) {
-            None => panic!("failed to find a matching rule for:\n{}\nfrom rules:\n{:?}", self, rules),
+            None => panic!(
+                "failed to find a matching rule for:\n{}\nfrom rules:\n{:?}",
+                self, rules
+            ),
             Some(rule) => rule.output.clone(),
         }
     }
@@ -186,7 +203,10 @@ impl Grid {
     }
 
     fn count_hash_pixels(&self) -> usize {
-        self.pixels.iter().filter(|pixel| pixel == &&Pixel::Hash).count()
+        self.pixels
+            .iter()
+            .filter(|pixel| pixel == &&Pixel::Hash)
+            .count()
     }
 }
 
@@ -201,12 +221,21 @@ impl<'a> From<&'a str> for Grid {
                     if size.is_none() {
                         size = Some(i + 1);
                     } else {
-                        assert!((i + 1) % size.unwrap() == 0, "encountered uneven row at {} in {}. size is {:?}", i, s, size);
+                        assert!(
+                            (i + 1) % size.unwrap() == 0,
+                            "encountered uneven row at {} in {}. size is {:?}",
+                            i,
+                            s,
+                            size
+                        );
                     }
                 }
             }
         }
-        Grid { size: size.expect("valid size") - 1, pixels }
+        Grid {
+            size: size.expect("valid size") - 1,
+            pixels,
+        }
     }
 }
 
@@ -230,7 +259,9 @@ enum Pixel {
 
 impl fmt::Display for Pixel {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}",
+        write!(
+            f,
+            "{}",
             match *self {
                 Pixel::Hash => '#',
                 Pixel::Dot => '.',
@@ -259,13 +290,34 @@ impl From<char> for Token {
 fn test_grid_from() {
     use Pixel::*;
     let grid = Grid::from("../.#");
-    assert_eq!(Grid { size: 2, pixels: vec![Dot, Dot, Dot, Hash] }, grid);
-    
+    assert_eq!(
+        Grid {
+            size: 2,
+            pixels: vec![Dot, Dot, Dot, Hash],
+        },
+        grid
+    );
+
     let grid = Grid::from(".#./..#/###");
-    assert_eq!(Grid { size: 3, pixels: vec![Dot, Hash, Dot, Dot, Dot, Hash, Hash, Hash, Hash] }, grid);
+    assert_eq!(
+        Grid {
+            size: 3,
+            pixels: vec![Dot, Hash, Dot, Dot, Dot, Hash, Hash, Hash, Hash],
+        },
+        grid
+    );
 
     let grid = Grid::from("#..#/..../#..#/.##.");
-    assert_eq!(Grid { size: 4, pixels: vec![Hash, Dot, Dot, Hash, Dot, Dot, Dot, Dot, Hash, Dot, Dot, Hash, Dot, Hash, Hash, Dot] }, grid);
+    assert_eq!(
+        Grid {
+            size: 4,
+            pixels: vec![
+                Hash, Dot, Dot, Hash, Dot, Dot, Dot, Dot, Hash, Dot, Dot, Hash, Dot, Hash, Hash,
+                Dot,
+            ],
+        },
+        grid
+    );
 }
 
 #[cfg(test)]
@@ -289,7 +341,10 @@ mod tests {
         let grid = Grid::from(".#.#/#..#/#.#./.##.");
         assert_eq!(Grid::from("##../..##/#..#/.##."), grid.rotate()); // 90 ccw
         assert_eq!(Grid::from(".##./.#.#/#..#/#.#."), grid.rotate().rotate()); // 180 ccw
-        assert_eq!(Grid::from(".##./#..#/##../..##"), grid.rotate().rotate().rotate()); // 270 ccw
+        assert_eq!(
+            Grid::from(".##./#..#/##../..##"),
+            grid.rotate().rotate().rotate()
+        ); // 270 ccw
         assert_eq!(grid, grid.rotate().rotate().rotate().rotate()); // 360 ccw; back to original
     }
 
@@ -309,7 +364,10 @@ mod tests {
         let sub_grid = Grid::from("##./#../...");
         let sub_grids = vec![sub_grid; 4];
         let merged = Grid::from_sub_grids(&sub_grids);
-        assert_eq!(Grid::from("##.##./#..#../....../##.##./#..#../......"), merged);
+        assert_eq!(
+            Grid::from("##.##./#..#../....../##.##./#..#../......"),
+            merged
+        );
     }
 
     #[test]
@@ -320,7 +378,11 @@ mod tests {
 
         // size 3
         let grid = Grid::starting_pattern();
-        assert_eq!(vec![Grid::starting_pattern()], grid.subdivide(), "subdivide size 3");
+        assert_eq!(
+            vec![Grid::starting_pattern()],
+            grid.subdivide(),
+            "subdivide size 3"
+        );
 
         let grid = Grid::from("#..#/..../..../#..#");
         let given = vec![
