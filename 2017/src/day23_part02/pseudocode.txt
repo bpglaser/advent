@@ -1,0 +1,43 @@
+a = 1
+b = 67
+c = 67
+b = b + 100000
+c = b
+c = c + 17000
+
+# b = 106700
+# c = 123700
+
+f = 1 # bin
+d = 2
+
+e = 2 # bar
+
+g = d # foo
+g = g * e
+g = g - b
+if not g:
+    g = e
+    g = g - b
+    if not g:
+        goto foo
+    else:
+        f = 0
+        g = g - b
+        if not g:
+            goto foo
+
+d = d + 1
+g = d
+g = g - b
+if not g:
+    goto bar
+
+if f:
+    h = h + 1
+    g = b
+g = g - c
+if g:
+    exit
+else:
+    goto bin
