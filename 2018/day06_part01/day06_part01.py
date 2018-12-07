@@ -1,59 +1,32 @@
 from collections import defaultdict, deque
+import string
 from sys import argv
 
 
 def main():
     points = load_input(argv[1])
     bounds = find_bounds(points)
-    names = {p: c for p, c in zip(points, 'abcdefghijklmnopqrstuvwxyz')}
+    names = {p: c for p, c in zip(points, string.ascii_letters)}
 
-    counts = {p: 0 for p in points}
+    grids = {p: fill(p, bounds) for p in points}
+
+    master_grid = {}
+    for 
+
+
+def fill(parent, bounds):
+    minx, miny, maxx, maxy = bounds
     grid = {}
-    queue = deque()
+    for x in range(minx, maxx + 1):
+        for y in range(miny, maxy + 1):
+            grid[(x, y)] = manhattan_distance((x, y), parent)
+    return grid
 
-    for parent in points:
-        # ensure that no two given points are in the same spot
-        assert parent not in grid
 
-        counts[parent] += 1
-        grid[parent] = (parent, 0)
-        for neighbor in neighbors(parent):
-            queue.append((parent, neighbor))
-
-    while len(queue) > 0:
-        parent, point = queue.popleft()
-
-        print('=================')
-        print_grid(grid, bounds, names)
-        print(names[parent], point)
-        print(outofbounds(point, bounds))
-
-        # import pdb
-        # pdb.set_trace()
-
-        if outofbounds(point, bounds):
-            continue
-
-        if point in grid:
-            if grid[point] is None:
-                continue
-            otherparent, dist = grid[point]
-            if otherparent != parent and :
-                continue
-            elif 
-            else:
-                counts[grid[point]] -= 1
-                grid[point] = None
-                continue
-
-        counts[parent] += 1
-        grid[point] = parent
-
-        for neighbor in neighbors(point):
-            queue.append((parent, neighbor))
-
-    for p, count in counts.items():
-        print(names[p], count)
+def manhattan_distance(a, b):
+    x1, y1 = a
+    x2, y2 = b
+    return abs(x1 - x2) + abs(y1 - y1)
 
 
 def print_grid(grid, bounds, names):
