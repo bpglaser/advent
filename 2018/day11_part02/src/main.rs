@@ -9,12 +9,16 @@ fn main() {
 fn solve(serial_number: i32) -> (usize, usize, usize, i32) {
     let mut grid = vec![vec![0; 301]; 301];
     let mut subsquares = vec![vec![vec![0; 301]; 301]; 2];
+    let mut subrows = vec![vec![vec![0; 301]; 301]; 2];
+    let mut subcols = vec![vec![vec![0; 301]; 301]; 2];
 
     for y in 1..=300 {
         for x in 1..=300 {
             let pl = power_level(x as i32, y as i32, serial_number);
             grid[y][x] = pl;
             subsquares[1][y][x] = pl;
+            subrows[1][y][x] = pl;
+            subcols[1][y][x] = pl;
         }
     }
 
@@ -25,12 +29,10 @@ fn solve(serial_number: i32) -> (usize, usize, usize, i32) {
                 let point = grid[y][x];
                 let subsquare = subsquares[(size - 1) % 2][y + 1][x + 1];
 
-                let mut row = 0;
-                let mut col = 0;
-                for offset in 1..size {
-                    row += grid[y][x + offset];
-                    col += grid[y + offset][x];
-                }
+                let row = subrows[(size - 1) % 2][y][x + 1];
+                subrows[size % 2][y][x] = point + row;
+                let col = subcols[(size - 1) % 2][y + 1][x];
+                subcols[size % 2][y][x] = point + col;
 
                 let power = point + subsquare + row + col;
                 subsquares[size % 2][y][x] = power;
@@ -42,7 +44,7 @@ fn solve(serial_number: i32) -> (usize, usize, usize, i32) {
         }
     }
 
-    return ans;
+    ans
 }
 
 fn power_level(x: i32, y: i32, serial_number: i32) -> i32 {
