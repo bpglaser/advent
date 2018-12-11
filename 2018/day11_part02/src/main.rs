@@ -11,18 +11,22 @@ fn solve(serial_number: i32) -> (usize, usize, usize, i32) {
     let mut subsquares = vec![vec![vec![0; 301]; 301]; 2];
     let mut subrows = vec![vec![vec![0; 301]; 301]; 2];
     let mut subcols = vec![vec![vec![0; 301]; 301]; 2];
+    let mut ans = (0, 0, 0, i32::min_value());
 
     for y in 1..=300 {
         for x in 1..=300 {
-            let pl = power_level(x as i32, y as i32, serial_number);
-            grid[y][x] = pl;
-            subsquares[1][y][x] = pl;
-            subrows[1][y][x] = pl;
-            subcols[1][y][x] = pl;
+            let power = power_level(x as i32, y as i32, serial_number);
+            grid[y][x] = power;
+            subsquares[1][y][x] = power;
+            subrows[1][y][x] = power;
+            subcols[1][y][x] = power;
+
+            if power > ans.3 {
+                ans = (x, y, 1, power);
+            }
         }
     }
 
-    let mut ans = (0, 0, 0, i32::min_value());
     for size in 2..=300 {
         for y in 1..=(300 - size) {
             for x in 1..=(300 - size) {
