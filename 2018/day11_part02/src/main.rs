@@ -1,7 +1,7 @@
 use std::env::args;
 
 fn main() {
-    let serial_number: i32 = args().skip(1).next().map(|s| s.parse().unwrap()).unwrap();
+    let serial_number: i32 = args().nth(1).map(|s| s.parse().unwrap()).unwrap();
     let (x, y, size, power) = solve(serial_number);
     println!("{},{},{} => {}", x, y, size, power);
 }
