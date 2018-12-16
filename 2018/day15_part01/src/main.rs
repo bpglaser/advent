@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::env::args;
 use std::fs::File;
 use std::io::Read;
@@ -9,7 +9,7 @@ fn main() {
     let mut buf = String::new();
     let mut file = File::open(path).unwrap();
     file.read_to_string(&mut buf).unwrap();
-    println!("{}", solve(&buf));
+    println!("Answer: {}", solve(&buf));
 }
 
 fn solve(input: &str) -> i32 {
@@ -26,9 +26,9 @@ fn solve(input: &str) -> i32 {
             break;
         }
 
-        println!("After {} rounds:", rounds);
-        render(&grid);
-        println!();
+        // println!("After {} rounds:", rounds);
+        // render(&grid);
+        // println!();
     }
 
     println!("Final state:");
@@ -71,11 +71,10 @@ fn do_round(grid: &mut Grid) -> bool {
 
     let num_todo = todo.len();
     for (i, (x, y)) in todo.into_iter().enumerate() {
-        println!("working on {:?}", grid[y][x]);
         let (x, y) = do_move(grid, x, y);
         do_attack(grid, x, y);
 
-        let (elves, goblins)= count_units(&grid);
+        let (elves, goblins) = count_units(&grid);
         if elves == 0 || goblins == 0 {
             return i == num_todo - 1;
         }
@@ -85,7 +84,6 @@ fn do_round(grid: &mut Grid) -> bool {
 }
 
 fn do_move(grid: &mut Grid, x: usize, y: usize) -> (usize, usize) {
-    println!("moving {:?} at {:?}", grid[y][x], (x, y));
     // Check if we're already adjacent to an enemy.
     for (ax, ay) in get_adjacent(x, y) {
         match (&grid[y][x], &grid[ay][ax]) {
@@ -95,29 +93,15 @@ fn do_move(grid: &mut Grid, x: usize, y: usize) -> (usize, usize) {
         }
     }
 
-    // Find all the enemies.
-    let mut enemies = vec![];
-    for (ey, row) in grid.iter().enumerate() {
-        for (ex, unit) in row.iter().enumerate() {
-            match (&grid[y][x], unit) {
-                (Tile::Elf(_), Tile::Goblin(_)) => enemies.push((ex, ey)),
-                (Tile::Goblin(_), Tile::Elf(_)) => enemies.push((ex, ey)),
-                _ => {}
+    let mut shortest: Vec<(usize, usize, usize)> = vec![];
+    for (ax, ay) in get_adjacent(x, y) {
+        match &grid[ay][ax] {
+            Tile::Open => {
+                if let Some(dist) = find_closest(&grid, ax, ay, &grid[y][x]) {
+                    shortest.push((ax, ay, dist));
+                }
             }
-        }
-    }
-
-    let mut shortest = vec![];
-    // println!("enemies: {:?}", enemies.iter().map(|(x, y)| &grid[*y][*x]).collect::<Vec<_>>());
-    // Flood fill from each of the enemies.
-    for (ex, ey) in enemies {
-        let mut flood = vec![vec![None; grid[0].len()]; grid.len()];
-        flood_fill(grid, &mut flood, ex, ey);
-
-        for (ax, ay) in get_adjacent(x, y) {
-            if let Some(dist) = flood[ay][ax] {
-                shortest.push(((ax, ay), (ex, ey), dist));
-            }
+            _ => {}
         }
     }
 
@@ -125,11 +109,11 @@ fn do_move(grid: &mut Grid, x: usize, y: usize) -> (usize, usize) {
         return (x, y);
     }
 
-    let shortest_dist = shortest.iter().map(|&(_, _, dist)| dist).min().unwrap();
-    shortest.retain(|&(_, _, dist)| dist == shortest_dist);
-    shortest.sort_by_key(|&((ax, ay), _, _)| (ay, ax));
-    let (movx, movy) = shortest[0].0;
+    shortest.sort_by(|&(x1, y1, dist1), &(x2, y2, dist2)| {
+        dist1.cmp(&dist2).then(y1.cmp(&y2)).then(x1.cmp(&x2))
+    });
 
+    let (movx, movy, _) = shortest[0];
     let mut tmp = Tile::Open;
     // Take the tile out of the grid and leave Open in its place
     mem::swap(&mut tmp, &mut grid[y][x]);
@@ -139,29 +123,40 @@ fn do_move(grid: &mut Grid, x: usize, y: usize) -> (usize, usize) {
     (movx, movy)
 }
 
-fn flood_fill(grid: &Grid, flood: &mut Vec<Vec<Option<u32>>>, x: usize, y: usize) {
-    println!("doing flood fill starting at {:?} [{:?}]", (x, y), grid[y][x]);
+fn find_closest(grid: &Grid, x: usize, y: usize, tile: &Tile) -> Option<usize> {
     let mut frontier = VecDeque::new();
+    let mut seen = HashSet::new();
     frontier.push_back((x, y, 0));
 
-    while let Some((x, y, dist)) = frontier.pop_front() {
-        flood[y][x] = Some(dist);
+    while let Some((nx, ny, dist)) = frontier.pop_front() {
+        if seen.contains(&(nx, ny)) {
+            continue;
+        }
+        seen.insert((nx, ny));
 
-        for (ax, ay) in get_adjacent(x, y) {
-            if flood[ay][ax].is_some() {
-                continue;
+        match (&grid[ny][nx], tile) {
+            (Tile::Elf(_), Tile::Goblin(_)) => {
+                return Some(dist);
             }
-
-            match &grid[ay][ax] {
-                Tile::Open => frontier.push_back((ax, ay, dist + 1)),
-                _ => {},
+            (Tile::Goblin(_), Tile::Elf(_)) => {
+                return Some(dist);
             }
+            (Tile::Open, _) => {
+                for (ax, ay) in get_adjacent(nx, ny) {
+                    match &grid[ay][ax] {
+                        Tile::Wall => {}
+                        _ => frontier.push_back((ax, ay, dist + 1)),
+                    }
+                }
+            }
+            _ => {}
         }
     }
+
+    None
 }
 
 fn do_attack(grid: &mut Grid, x: usize, y: usize) {
-    println!("attacking with {:?} at {:?}", grid[y][x], (x, y));
     let mut ap = None;
     let mut chosen: Option<(usize, usize, i32)> = None;
 
@@ -189,7 +184,6 @@ fn do_attack(grid: &mut Grid, x: usize, y: usize) {
     if let Some((tx, ty, _)) = chosen {
         match &mut grid[ty][tx] {
             Tile::Elf(meta) | Tile::Goblin(meta) => {
-                // println!("{:?} is attacking {:?}", (x, y), (tx, ty));
                 meta.hit_points -= ap.unwrap();
                 if meta.hit_points <= 0 {
                     grid[ty][tx] = Tile::Open;
