@@ -2,51 +2,41 @@ use std::cmp;
 use std::env::args;
 use std::fs::File;
 use std::io::Read;
-use std::io::stdout;
 use std::str::FromStr;
 
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::CoordRange::*;
+use crate::FlowDirection::*;
 
-// TOO LOW 1308
-
+type Coord = (usize, usize);
+type FlowStack = Vec<(usize, usize, FlowDirection)>;
 type Grid = Vec<Vec<char>>;
 
 lazy_static! {
     static ref PARSE_PATTERN: Regex = Regex::new(r".*?(\d+).*?(\d+).*?(\d+)").unwrap();
 }
 
-const SPRING: (usize, usize) = (500, 0);
+const SPRING: Coord = (500, 0);
 
 fn main() {
     let mut grid;
-    let mut spring_x = SPRING.0;
-    let mut spring_y = SPRING.1;
-    if let Some(debug_path) = args().nth(3) {
-        let debug = load_debug(&debug_path);
-        grid = debug.0;
-        spring_x = debug.1;
-        spring_y = debug.2;
-    } else {
-        let path = args().nth(1).expect("input path");
 
-        let coords = read_input(&path);
-        let ((minx, maxx), (miny, maxy)) = find_bounds(&coords);
+    let path = args().nth(1).expect("input path");
 
-        grid = vec![vec!['.'; maxx + 2]; maxy + 1];
-        for coord in &coords {
-            for (x, y) in coord.iter() {
-                grid[y][x] = '#';
-            }
+    let coords = read_input(&path);
+    let ((minx, maxx), (miny, maxy)) = find_bounds(&coords);
+
+    grid = vec![vec!['.'; maxx + 2]; maxy + 1];
+    for coord in &coords {
+        for (x, y) in coord.iter() {
+            grid[y][x] = '#';
         }
-        grid[spring_y][spring_x] = '+';
-
-        render(&grid, &mut stdout()); // todo remove
     }
+    grid[SPRING.1][SPRING.0] = '+';
 
-    fill(&mut grid, spring_x, spring_y + 1);
+    fill(&mut grid, SPRING.0, SPRING.1 + 1);
 
     if let Some(out) = args().nth(2) {
         let mut file = File::create(out).unwrap();
@@ -54,8 +44,8 @@ fn main() {
     }
 
     let mut count = 0;
-    for row in &grid {
-        for c in row {
+    for y in miny..=maxy {
+        for c in &grid[y] {
             match c {
                 '|' | '~' => count += 1,
                 _ => {}
@@ -66,59 +56,47 @@ fn main() {
 }
 
 fn fill(grid: &mut Grid, start_x: usize, start_y: usize) {
-    let mut stack = vec![(start_x, start_y)];
-    while let Some((start_x, start_y)) = stack.pop() {
-        println!("filling from {:?}", (start_x, start_y));
-
-        if start_y == grid.len() - 1 {
-            grid[start_y][start_x] = '|';
-            return;
+    let mut stack = vec![(start_x, start_y, Down)];
+    while let Some((start_x, start_y, dir)) = stack.pop() {
+        match dir {
+            Down => flow_down(&mut stack, grid, start_x, start_y),
+            Up => flow_up(&mut stack, grid, start_x, start_y),
         }
-
-        if grid[start_y][start_x] != '.' {
-            continue;
-        }
-
-        let mut furthest_y = start_y;
-        for y in start_y..grid.len() {
-            if y == grid.len() - 1 {
-                grid[y][start_x] = '|';
-                break;
-            }
-
-            match grid[y][start_x] {
-                '#' | '~' => {
-                    break;
-                }
-                '.' | '|' => {
-                    furthest_y = y;
-                    grid[y][start_x] = '|';
-                }
-                _ => panic!("invalid state"),
-            }
-        }
-
-        for y in (0..=furthest_y).rev() {
-            // if grid[y][start_x] == '~' {
-            //     continue;
-            // }
-            if grid[y + 1][start_x] == '~' || grid[y + 1][start_x] == '#' {
-                let (left, right) = spread(grid, start_x, y);
-                if let Some(left) = left {
-                    stack.push(left);
-                }
-                if let Some(right) = right {
-                    stack.push(right);
-                }
-            }
-        }
-        println!("after fill");
-        render(&grid, &mut stdout());
     }
 }
 
-fn spread(grid: &mut Grid, start_x: usize, start_y: usize) -> (Option<(usize, usize)>, Option<(usize, usize)>) {
-    println!("spreading at {:?}", (start_x, start_y));
+fn flow_down(stack: &mut FlowStack, grid: &mut Grid, start_x: usize, start_y: usize) {
+    for y in start_y..grid.len() {
+        match grid[y][start_x] {
+            '~' | '#' => break,
+            '.' | '|' => {
+                grid[y][start_x] = '|';
+                stack.push((start_x, y, Up));
+            }
+            _ => unreachable!(),
+        }
+    }
+}
+
+fn flow_up(stack: &mut FlowStack, grid: &mut Grid, start_x: usize, start_y: usize) {
+    if start_y == grid.len() - 1 {
+        return;
+    }
+    match grid[start_y + 1][start_x] {
+        '~' | '#' => match spread(grid, start_x, start_y) {
+            (Some(l), Some(r)) => {
+                stack.push((l.0, l.1, Down));
+                stack.push((r.0, r.1, Down));
+            }
+            (Some(l), None) => stack.push((l.0, l.1, Down)),
+            (None, Some(r)) => stack.push((r.0, r.1, Down)),
+            (None, None) => {}
+        },
+        _ => {}
+    }
+}
+
+fn spread(grid: &mut Grid, start_x: usize, start_y: usize) -> (Option<Coord>, Option<Coord>) {
     if start_y == grid.len() - 1 || grid[start_y][start_x] == '#' {
         return (None, None);
     }
@@ -154,7 +132,6 @@ fn spread(grid: &mut Grid, start_x: usize, start_y: usize) -> (Option<(usize, us
     }
 
     if left_wall && right_wall {
-        println!("filled up");
         for x in far_left..=far_right {
             grid[start_y][x] = '~';
         }
@@ -170,13 +147,16 @@ fn spread(grid: &mut Grid, start_x: usize, start_y: usize) -> (Option<(usize, us
             return (None, Some((far_right + 1, start_y)));
         }
         if !left_wall && !right_wall {
-            return (Some((far_left - 1, start_y)), Some((far_right + 1, start_y)));
+            return (
+                Some((far_left - 1, start_y)),
+                Some((far_right + 1, start_y)),
+            );
         }
     }
-    return (None, None)
+    return (None, None);
 }
 
-fn find_bounds(coords: &[CoordRange]) -> ((usize, usize), (usize, usize)) {
+fn find_bounds(coords: &[CoordRange]) -> (Coord, Coord) {
     let mut minx = usize::max_value();
     let mut maxx = usize::min_value();
     let mut miny = usize::max_value();
@@ -202,24 +182,8 @@ fn find_bounds(coords: &[CoordRange]) -> ((usize, usize), (usize, usize)) {
     ((minx, maxx), (miny, maxy))
 }
 
-fn load_debug(path: &str) -> (Grid, usize, usize) {
-    let mut file = File::open(path).unwrap();
-    let mut buf = String::new();
-    file.read_to_string(&mut buf).unwrap();
-    let grid: Vec<Vec<char>> = buf.lines().map(|line| line.chars().collect()).collect();
-
-    for (y, row) in grid.iter().enumerate() {
-        for (x, c) in row.iter().enumerate() {
-            if c == &'+' {
-                return (grid, x, y);
-            }
-        }
-    }
-    panic!("no cross found in debug");
-}
-
 fn render<T: std::io::Write>(grid: &Grid, w: &mut T) {
-    for row in grid{
+    for row in grid {
         for c in row {
             write!(w, "{}", c).unwrap();
         }
@@ -235,9 +199,8 @@ fn read_input(path: &str) -> Vec<CoordRange> {
 }
 
 enum FlowDirection {
-    Top,
-    SpreadLeft,
-    SpreadRight,
+    Down,
+    Up,
 }
 
 #[derive(Debug)]
