@@ -5,3 +5,4 @@ authors = ["bpglaser <bpglaser@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+gif = "0.10.1"

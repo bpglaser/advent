@@ -1,7 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env::args;
 use std::fs::File;
 use std::io::{stdout, Read, Write};
+
+use gif::*;
 
 const DURATION: usize = 1000000000;
 type Grid = Vec<Vec<char>>;
@@ -20,6 +22,7 @@ fn main() {
             let start = seen.get(&grid).unwrap();
             let j = start + ((DURATION - start) % (i - start));
             println!("{:?}", scores[j]);
+            output_image(&grid).unwrap();
             return;
         }
         scores.push(score(&grid));
@@ -31,6 +34,57 @@ fn main() {
     println!("ans: {}", score(&grid));
 }
 
+fn output_image(grid: &Grid) -> Result<(), Box<std::error::Error>> {
+    let out = File::create("out.gif")?;
+    let mut encoder = Encoder::new(out, (grid[0].len() * 10) as u16, (grid.len() * 10) as u16, &[])?;
+    Repeat::Infinite.set_param(&mut encoder)?;
+
+    let mut seen = HashSet::new();
+    let mut grid = grid.clone();
+    while !seen.contains(&grid) {
+        let rgb = create_frame(&grid);
+        let frame = Frame::from_rgb((grid[0].len() * 10) as u16, (grid.len() * 10) as u16, rgb.as_slice());
+        encoder.write_frame(&frame)?;
+        let next = step(&grid);
+        seen.insert(grid);
+        grid = next;
+    }
+
+    Ok(())
+}
+
+fn create_frame(grid: &Grid) -> Vec<u8> {
+    let tan = [0xFF, 0xE9, 0xC7];
+    let brown = [0xA3, 0x7C, 0x19];
+    let green = [0x39, 0x50, 0x36];
+
+    let mut scaled = vec![vec!['!'; grid[0].len() * 10]; grid.len() * 10];
+    for (y, row) in grid.iter().enumerate() {
+        for (x, c) in row.iter().enumerate() {
+            for dy in 0..10 {
+                for dx in 0..10 {
+                    scaled[y * 10 + dy][x * 10 + dx] = *c;
+                }
+            }
+        }
+    }
+
+    let mut buf = vec![];
+
+    for row in scaled {
+        for c in row {
+            buf.extend(match c {
+                '.' => tan.iter(),
+                '#' => brown.iter(),
+                '|' => green.iter(),
+                _ => unreachable!(),
+            });
+        }
+    }
+
+    buf
+}
+
 fn score(grid: &Grid) -> usize {
     let mut w = 0;
     let mut l = 0;
@@ -38,7 +92,7 @@ fn score(grid: &Grid) -> usize {
     for row in grid {
         for c in row {
             match c {
-                '.' => {},
+                '.' => {}
                 '|' => w += 1,
                 '#' => l += 1,
                 _ => unreachable!(),
@@ -72,8 +126,8 @@ fn step(grid: &Grid) -> Grid {
                     }
                 }
                 '#' => {
-                    if count_adjacent(grid, x, y, '#') >= 1 &&
-                        count_adjacent(grid, x, y, '|') >= 1 {
+                    if count_adjacent(grid, x, y, '#') >= 1 && count_adjacent(grid, x, y, '|') >= 1
+                    {
                         row.push('#');
                     } else {
                         row.push('.');
