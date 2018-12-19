@@ -2,4 +2,5 @@
 out/
 2015/src/*/target/
 2016/src/*/target/
+2018/*/target/
 *.exe
