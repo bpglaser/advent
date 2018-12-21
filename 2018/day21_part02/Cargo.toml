@@ -1,0 +1,7 @@
+[package]
+name = "day21_part02"
+version = "0.1.0"
+authors = ["bpglaser <bpglaser@gmail.com>"]
+edition = "2018"
+
+[dependencies]
