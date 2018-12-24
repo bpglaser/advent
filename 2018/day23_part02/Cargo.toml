@@ -1,0 +1,8 @@
+[package]
+name = "day23_part02"
+version = "0.1.0"
+authors = ["bpglaser <bpglaser@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+cassowary = "0.3.0"
