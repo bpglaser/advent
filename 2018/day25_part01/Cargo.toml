@@ -1,0 +1,8 @@
+[package]
+name = "day25_part01"
+version = "0.1.0"
+authors = ["bpglaser <bpglaser@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+petgraph = "0.4.13"
