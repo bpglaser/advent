@@ -3,4 +3,7 @@ out/
 2015/src/*/target/
 2016/src/*/target/
 2018/*/target/
+2019/*/.ionide
+2019/*/bin
+2019/*/obj
 *.exe
