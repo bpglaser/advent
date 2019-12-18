@@ -1,6 +1,12 @@
 open System.IO
 open Intcode
 
+module Seq =
+    let rec all pred s =
+        if s |> Seq.isEmpty then true
+        elif s |> Seq.head |> pred then s |> Seq.tail |> all pred
+        else false
+
 type Grid = Map<int * int, char>
 
 let createGrid result =
@@ -106,6 +112,73 @@ let rec walk acc (pos, facing) (grid: Grid) =
             [string acc]
     | tile -> failwithf "Invalid tile encountered: %c" tile
 
+let findPath (grid: Grid) =
+    let start =
+        grid
+        |> Seq.map (fun entry -> (entry.Key, entry.Value))
+        |> Seq.find (fun (_, tile) -> tile = '^' || tile = '>' || tile = 'v' || tile = '<')
+
+    let cleanGrid =
+        grid
+        |> Map.map (fun k v -> if (k, v) = start then '#' else v)
+
+    walk 0 start cleanGrid
+    |> List.filter ((<>) "0")
+
+let createInstruction sub = sub |> String.concat ","
+
+let largestNonOverlappingSubstring values =
+    let values = Array.ofSeq values
+    let substring (i, length) =
+        values |> Array.skip i |> Array.truncate length
+
+    let rec buildCounts map sub =
+        let count = Map.tryFind sub map |> Option.defaultValue 0
+        Map.add sub (count + 1) map
+
+    seq {
+        for i in 0 .. values.Length - 1 do
+            for j in i + 1 .. values.Length - 1 do
+                let length = j - i
+                for k in j + 1 .. values.Length - 1 do
+                    let sub1 = substring (i, length)
+                    let sub2 = substring (k, length)
+                    if sub1 = sub2 then
+                        yield sub1
+    }
+    |> Seq.fold buildCounts Map.empty
+    |> Map.toSeq
+    |> Seq.filter (fun (sub, count) -> sub |> createInstruction |> String.length <= 20 && count > 1)
+    |> List.ofSeq
+    |> List.maxBy (fun (sub, _) -> sub.Length)
+    |> fst
+    |> List.ofArray
+
+type Instruction =
+    | Sequence of string list
+    | Mapped of string * string list
+
+let isMapped =
+    function
+    | Sequence _ -> false
+    | Mapped _ -> true
+
+let replaceLargest instruction =
+    match instruction with
+    | Mapped _ -> instruction
+    | Sequence values ->
+        let largest = largestNonOverlappingSubstring values
+
+let createMappedSequence path =
+    let rec inner instructions =
+        if Seq.all isMapped instructions then
+            instructions
+        else
+            instructions
+            |> List.collect replaceLargest
+            |> inner
+    inner [Sequence path]
+
 let findSolution line =
     let grid =
         line
@@ -115,12 +188,10 @@ let findSolution line =
 
     printGrid grid
 
-    let start =
-        grid
-        |> Seq.map (fun entry -> (entry.Key, entry.Value))
-        |> Seq.find (fun (_, tile) -> tile = '^' || tile = '>' || tile = 'v' || tile = '<')
-    let cleanGrid = grid |> Map.map (fun k v -> if (k, v) = start then '#' else v)
-    walk 0 start cleanGrid |> List.filter ((<>) "0") |> printfn "%A"
+    let path = findPath grid
+    printfn "%A" path
+    let largest = largestNonOverlappingSubstring path
+    printfn "%A" largest
 
     grid
     |> findScaffoldIntersections
