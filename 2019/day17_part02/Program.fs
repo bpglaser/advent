@@ -163,11 +163,22 @@ let isMapped =
     | Sequence _ -> false
     | Mapped _ -> true
 
-let replaceLargest instruction =
+let partitionInstruction instruction replacement =
+    let i =
+        seq { 0 .. List.length instruction - 1}
+        |> Seq.find (fun i ->
+            Seq.skip i instruction
+            |> Seq.zip replacement
+            |> Seq.all (fun (a, b) -> a = b))
+    [Sequence (List.take i instruction); Mapped ]
+
+let rec replaceLargest instruction =
     match instruction with
-    | Mapped _ -> instruction
+    | Mapped _ -> [instruction]
     | Sequence values ->
         let largest = largestNonOverlappingSubstring values
+        partitionInstruction values largest
+        |> replaceLargest
 
 let createMappedSequence path =
     let rec inner instructions =
