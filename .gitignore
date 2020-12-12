@@ -5,6 +5,7 @@ out/
 2018/*/target/
 2019/*/.ionide
 2020/*/.ionide
+.vs/
 bin/
 obj/
 *.exe
