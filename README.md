@@ -6,6 +6,9 @@ This project chronicles my efforts in completing ["Advent of Code" by Eric Wastl
 - [x] 2016
 - [x] 2017
 - [x] 2018
+- [ ] 2019 - 17/25
+- [ ] 2020 - 04/25
+- [ ] 2021 - WIP
 
 >Advent of Code is a series of small programming puzzles for a variety of skill levels. They are self-contained and are just as appropriate for an expert who wants to stay sharp as they are for a beginner who is just learning to code.
 
