@@ -1,12 +1,8 @@
+*.exe
 .idea/
-out/
-2015/src/*/target/
-2016/src/*/target/
-2018/*/target/
-2019/*/.ionide
-2020/*/.ionide
-2021/*/target
+.ionide/
 .vs/
 bin/
 obj/
-*.exe
+out/
+target/
