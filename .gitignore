@@ -1,4 +1,5 @@
 *.exe
+.config/
 .idea/
 .ionide/
 .vs/
