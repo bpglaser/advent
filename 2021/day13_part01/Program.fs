@@ -8,6 +8,21 @@ type Fold =
 let xPrefix = "fold along x="
 let yPrefix = "fold along y="
 
+let dims grid =
+    Array2D.length1 grid, Array2D.length2 grid
+
+let makeEmptyGrid w h = Array2D.create w h '.'
+
+let buildGrid pairs =
+    let maxPair (a, b) (c, d) = (max a c, max b d)
+    let maxX, maxY = Array.fold maxPair (0, 0) pairs
+    let grid = makeEmptyGrid (maxX + 1) (maxY + 1)
+
+    for (x, y) in pairs do
+        grid[x, y] <- '#'
+
+    grid
+
 let parse lines =
     let pair (s: string) =
         match s.Split(',', StringSplitOptions.TrimEntries) with
@@ -22,18 +37,95 @@ let parse lines =
         else
             None
 
-    Array.choose pair lines, Array.choose fold lines
+    let pairs = Array.choose pair lines
+    buildGrid pairs, Array.choose fold lines
 
-let applyFold fold points =
+let splitHorizontal x grid =
+    let w, h = dims grid
+    assert (x < w)
+    let l = makeEmptyGrid x h
+    let r = Array2D.copy l
+    Array2D.blit grid 0 0 l 0 0 x h
+    Array2D.blit grid (x + 1) 0 r 0 0 (w - x - 1) h
+    l, r
+
+let splitVertical y grid =
+    let w, h = dims grid
+    assert (y < h)
+    let u = makeEmptyGrid w y
+    let d = Array2D.copy u
+    Array2D.blit grid 0 0 u 0 0 w y
+    Array2D.blit grid 0 (y + 1) d 0 0 w (h - y - 1)
+    u, d
+
+let flipHorizontal grid =
+    let w, h = dims grid
+    let result = makeEmptyGrid w h
+
+    for y in 0 .. (h - 1) do
+        for x in 0 .. (w - 1) do
+            result[w - x - 1, y] <- grid[x, y]
+
+    result
+
+let flipVertical grid =
+    let w, h = dims grid
+    let result = makeEmptyGrid w h
+
+    for y in 0 .. (h - 1) do
+        for x in 0 .. (w - 1) do
+            result[x, h - y - 1] <- grid[x, y]
+
+    result
+
+let overlay a b : 'b =
+    let w, h = dims a
+    assert ((w, h) = dims b)
+    let result = makeEmptyGrid w h
+
+    for x in 0 .. (w - 1) do
+        for y in 0 .. (h - 1) do
+            result[x, y] <- if a[x, y] = '#' || b[x, y] = '#' then
+                                '#'
+                            else
+                                '.'
+
+    result
+
+let applyFold fold grid =
     match fold with
     | XFold i ->
-        points
+        let u, d = splitHorizontal i grid
+        let d = flipHorizontal d
+        overlay u d
     | YFold i ->
-        points
+        let l, r = splitVertical i grid
+        let r = flipVertical r
+        overlay l r
 
-let solve (points, folds) =
-    applyFold (Array.head folds) points
-    |> Array.length
+let countDots = Seq.filter ((=) '#') >> Seq.length
+
+let flattenGrid grid =
+    seq {
+        for y in 0 .. Array2D.length2 grid - 1 do
+            for x in 0 .. Array2D.length1 grid - 1 do
+                yield grid[x, y]
+    }
+
+let output grid =
+    let w, h = dims grid
+
+    for y in 0 .. h - 1 do
+        for x in 0 .. w - 1 do
+            printf "%c" grid[x, y]
+
+        printf "\n"
+
+let solve (grid, folds) =
+    grid
+    |> applyFold (Array.head folds)
+    |> flattenGrid
+    |> countDots
 
 [<EntryPoint>]
 let main args =
